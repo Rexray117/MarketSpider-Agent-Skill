@@ -1,0 +1,179 @@
+{
+  "jd": {
+    "label": "京东",
+    "home": "https://www.jd.com",
+    "login_home": "https://www.jd.com",
+    "search_url": "https://search.jd.com/Search?keyword={kw}&enc=utf-8&page={page_param}",
+    "page_mode": "double",
+    "item_link_pattern": "item\\.jd\\.com|item\\.m\\.jd\\.com|u\\.jd\\.com",
+    "cards": [
+      "#J_goodsList > ul > li",
+      "#J_goodsList li.gl-item",
+      "#J_goodsList .gl-item",
+      "ul.gl-warp > li"
+    ],
+    "link_fallback": ["a[href*='item.jd.com']", "a[href]"],
+    "total_pages": ["#J_topPage > span > i", "#J_topPage i", ".p-skip em b"],
+    "fields": {
+      "item_link": [
+        {"sel": "div.p-img > a", "attr": "href"},
+        {"sel": "a[href*='item.jd.com']", "attr": "href"},
+        {"sel": "a", "attr": "href"}
+      ],
+      "item_name": [
+        {"sel": "div.p-name em"},
+        {"sel": ".p-name em"},
+        {"sel": "div.p-name"},
+        {"sel": "div.p-name a"}
+      ],
+      "item_price": [
+        {"sel": "div.p-price strong i"},
+        {"sel": ".p-price i"},
+        {"sel": "div.p-price"},
+        {"sel": "[class*='price']"}
+      ],
+      "item_image": [
+        {"sel": "div.p-img img", "attr": "src"},
+        {"sel": "div.p-img img", "attr": "data-lazy-img"},
+        {"sel": "img", "attr": "src"},
+        {"sel": "img", "attr": "data-lazy-img"}
+      ],
+      "item_payment": [],
+      "item_rates": [
+        {"sel": "div.p-commit strong a"},
+        {"sel": ".p-commit strong"},
+        {"sel": "[class*='commit']"}
+      ],
+      "item_sales": [],
+      "item_shop": [
+        {"sel": "div.p-shop span a"},
+        {"sel": ".p-shop a"},
+        {"sel": "[class*='shop'] a"}
+      ],
+      "shop_link": [
+        {"sel": "div.p-shop span a", "attr": "href"},
+        {"sel": ".p-shop a", "attr": "href"}
+      ]
+    },
+    "notes": "京东卡片结构较稳定，但自动化/异地 IP 常被重定向到 passport.jd.com 登录页；此时命令以 auth/退出码 5 退出，先 ms cookie 保存登录态。出现验证码时用非无头模式人工过验证。"
+  },
+  "taobao": {
+    "label": "淘宝/天猫",
+    "home": "https://www.taobao.com",
+    "login_home": "https://login.taobao.com/member/login.jhtml?redirectURL=https%3A%2F%2Fwww.taobao.com",
+    "search_url": "https://s.taobao.com/search?q={kw}&s={page_param}&tab=all",
+    "page_mode": "offset44",
+    "item_link_pattern": "item\\.taobao\\.com|detail\\.tmall\\.com|item\\.tmall\\.com|chaoshi\\.detail\\.tmall\\.com",
+    "cards": [
+      "#content_items_wrapper > div",
+      "#content_items_wrapper > div[class*='Card']",
+      "div[class*='contentItems'] > div",
+      "div[class*='Card--']"
+    ],
+    "link_fallback": [
+      "a[href*='item.taobao.com']",
+      "a[href*='detail.tmall.com']",
+      "a[href]"
+    ],
+    "total_pages": [
+      "[class*='pagination'] [class*='simple'] span",
+      "[class*='pagination'] span",
+      "#sortBarWrap_right span"
+    ],
+    "fields": {
+      "item_link": [
+        {"sel": "a[href*='item.taobao.com']", "attr": "href"},
+        {"sel": "a[href*='detail.tmall.com']", "attr": "href"},
+        {"sel": "a", "attr": "href"}
+      ],
+      "item_name": [
+        {"sel": "[class*='title'] span"},
+        {"sel": "[class*='desc'] span"},
+        {"sel": "[class*='Title'] span"},
+        {"sel": "[class*='title']"}
+      ],
+      "item_price": [
+        {"sel": "[class*='innerPrice']"},
+        {"sel": "[class*='price'] [class*='inner']"},
+        {"sel": "[class*='priceWrapper']"},
+        {"sel": "[class*='price']"}
+      ],
+      "item_image": [
+        {"sel": "[class*='mainPic'] img", "attr": "src"},
+        {"sel": "img", "attr": "src"},
+        {"sel": "img", "attr": "data-src"}
+      ],
+      "item_payment": [],
+      "item_rates": [],
+      "item_sales": [
+        {"sel": "[class*='realSales']"},
+        {"sel": "[class*='sales']"}
+      ],
+      "item_shop": [
+        {"sel": "[class*='shopName']"},
+        {"sel": "[class*='shop'] a span"},
+        {"sel": "[class*='shop'] a"}
+      ],
+      "shop_link": [
+        {"sel": "[class*='shop'] a", "attr": "href"}
+      ]
+    },
+    "notes": "淘宝必须带登录 Cookie，且类名是构建期哈希；失效时用 probe 命令检查并按新 DOM 更新选择器。"
+  },
+  "1688": {
+    "label": "阿里巴巴1688",
+    "home": "https://www.1688.com",
+    "login_home": "https://login.1688.com/member/signin.htm",
+    "search_url": "https://s.1688.com/selloffer/offer_search.htm?keywords={kw}&beginPage={page_param}",
+    "page_mode": "direct",
+    "item_link_pattern": "detail\\.1688\\.com|dj\\.1688\\.com",
+    "cards": [
+      "#sm-offer-list > div",
+      "#sm-offer-list > div[class*='offer']",
+      "div[class*='offer-card']",
+      "div[class*='space-offer-card']"
+    ],
+    "link_fallback": ["a[href*='detail.1688.com']", "a[href]"],
+    "total_pages": [
+      "span.fui-paging-total em",
+      "[class*='paging'] [class*='total'] em",
+      "[class*='pagination'] [class*='total']"
+    ],
+    "fields": {
+      "item_link": [
+        {"sel": "a[href*='detail.1688.com']", "attr": "href"},
+        {"sel": "div[class*='img-container'] a", "attr": "href"},
+        {"sel": "a", "attr": "href"}
+      ],
+      "item_name": [
+        {"sel": "[class*='element-title'] a div"},
+        {"sel": "[class*='element-title'] a"},
+        {"sel": "[class*='title'] a"}
+      ],
+      "item_price": [
+        {"sel": "[class*='element-price'] [class*='price']"},
+        {"sel": "[class*='showPricec']"},
+        {"sel": "[class*='price']"}
+      ],
+      "item_image": [
+        {"sel": "img", "attr": "src"},
+        {"sel": "img", "attr": "data-src"}
+      ],
+      "item_payment": [],
+      "item_rates": [],
+      "item_sales": [
+        {"sel": "[class*='sale']"},
+        {"sel": "[class*='trade']"}
+      ],
+      "item_shop": [
+        {"sel": "[class*='company-name'] a div"},
+        {"sel": "[class*='company-name'] a"},
+        {"sel": "[class*='company'] a"}
+      ],
+      "shop_link": [
+        {"sel": "[class*='company-name'] a", "attr": "href"}
+      ]
+    },
+    "notes": "1688 搜索页类名同样会变；上游 1688Spider.py 依赖缺失的 functions.marketSpider 模块，此处为独立重写实现。"
+  }
+}
