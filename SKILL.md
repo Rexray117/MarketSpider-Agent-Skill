@@ -108,7 +108,7 @@ python scripts/ms.py doctor --launch
 - `install.ps1` / `install.sh` / `ms.cmd` / `ms.sh`
 - `drivers/`（离线 chromedriver）、`data/`（Cookie 与抓取结果）、`.venv/`
 
-- 结果：`data/result/<关键词>-<平台>-<时间戳>.<ext>`（默认在安装包根的 `data/result/`；单独部署时落在技能内容根或 `MARKETSPIDER_DATA` 指定的目录）
+结果默认写到安装包根的 `data/result/<关键词>-<平台>-<时间戳>.<ext>`；单独部署时落在技能内容根或 `MARKETSPIDER_DATA` 指定的目录。
 
 ## 7. 变更记录
 

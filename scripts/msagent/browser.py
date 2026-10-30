@@ -218,15 +218,32 @@ class BrowserSession:
                 cleanup_profile = True
             except OSError:
                 profile_dir = None
-        drv = build_driver(
-            browser=browser,
-            headless=cfg.get("headless", False) if headless is None else headless,
-            driver_path=driver_path or cfg.get("driver_path"),
-            user_agent=cfg.get("user_agent"),
-            proxy=cfg.get("proxy"),
-            profile_dir=profile_dir,
-            page_load_timeout=int(cfg.get("page_load_timeout", 45)),
-        )
+        def _launch(profile: str | None):
+            return build_driver(
+                browser=browser,
+                headless=cfg.get("headless", False) if headless is None else headless,
+                driver_path=driver_path or cfg.get("driver_path"),
+                user_agent=cfg.get("user_agent"),
+                proxy=cfg.get("proxy"),
+                profile_dir=profile,
+                page_load_timeout=int(cfg.get("page_load_timeout", 45)),
+            )
+
+        try:
+            drv = _launch(profile_dir)
+        except DriverUnavailable as exc:
+            # chromedriver sometimes fails to seed the throwaway profile
+            # ("failed to write prefs file") when it has to create the profile
+            # tree on a busy volume. One retry with a brand new directory
+            # normally succeeds, so a transient FS hiccup does not kill a run.
+            transient = "failed to write prefs file" in str(exc)
+            if not (transient and cleanup_profile and profile_dir):
+                raise
+            import shutil
+
+            shutil.rmtree(profile_dir, ignore_errors=True)
+            profile_dir = profile_dir + "-r1"
+            drv = _launch(profile_dir)
         if cleanup_profile and profile_dir:
             try:
                 drv._ms_profile_dir = profile_dir
