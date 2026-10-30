@@ -120,5 +120,6 @@ python scripts/ms.py doctor --launch
 - **`export` 字段契约**：输入 JSON 的键全部不在 `FIELDS`/`CN_NAMES` 内时给出 `warnings` 与 `next_actions`，不再静默写出十列全空。
 - **`probe` 提示**：选择器 0 命中时的提示改指向 `config/selectors.json`（不再出现已不存在的 `skill/config/`）；缺选择器时不再建议设置 `MARKETSPIDER_HOME`（该变量只移动 `project_root()`，指不到同一文件）。
 - **`cookie` 后续动作**：`next_actions` 里的 `ms cookie check` 改为真实存在的 `ms cookie --market <平台> --action check`。
+- **版本号**：`scripts/msagent/__init__.py` 的 `__version__` 从 1.0.0 升到 1.1.0，`ms markets` 等 JSON 的 `version` 字段随之一致。
 - **测试可移植**：`tests/test_cli.py` 改为向上查找含 `scripts/ms.py` 的目录（两种布局都能跑），临时数据改到系统 temp（此前写在 `<skill>/data/state`，会被一起发布）；`python -m unittest discover -s tests -v` 即可运行。
 - **文档校准**：所有路径与命令改为技能内容根 + `ms` 代指 `python scripts/ms.py`；`upstream/`、`install.*`、`drivers/`、`data/` 明确标注为“不属于本技能内容、不随 GitHub 发布”；导出格式补 `JSONL`。
