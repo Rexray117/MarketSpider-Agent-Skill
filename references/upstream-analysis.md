@@ -34,12 +34,12 @@
 
 | 上游能力 | 新位置 | 说明 |
 |---|---|---|
-| `Core.BrowserControl` | `skill/scripts/msagent/browser.py` → `BrowserSession` | 保留 Chrome/Edge/Firefox、`--disable-blink-features=AutomationControlled`；新增 headless、临时 profile、CDP `navigator.webdriver` 隐藏、页面就绪等待、滚动 |
+| `Core.BrowserControl` | `scripts/msagent/browser.py` → `BrowserSession` | 保留 Chrome/Edge/Firefox、`--disable-blink-features=AutomationControlled`；新增 headless、临时 profile、CDP `navigator.webdriver` 隐藏、页面就绪等待、滚动 |
 | `Core.inject_cookie` / `save_cookie` | `BrowserSession.load_cookie/save_cookie` | 同样保存 `.cookie` + `.storage`（localStorage/sessionStorage），但路径固定在数据目录 |
-| `Core.CsvWriter/JsonWriter/ExcelWriter/TxtWriter/SqlWriter` | `skill/scripts/msagent/writers.py` | 保留 10 字段与中文表头；新增 jsonl / sqlite / md；JSON 额外记录 market/keyword/page/position/captured_at |
-| `Core.Logger` | `msagent/logutil.py` → `RunLog` | 纯文件日志 + 结构化 warnings，不弹窗 |
-| `Core.check_configFile_exist/pre_check_cookie` | `msagent/config.py` + CLI | 缺失不再阻断，降级为 warning 与 `next_actions` |
-| `Spider_jd.py` 的选择器 | `skill/config/selectors.json` → `jd` | 选择器外置，probe 可诊断 |
+| `Core.CsvWriter/JsonWriter/ExcelWriter/TxtWriter/SqlWriter` | `scripts/msagent/writers.py` | 保留 10 字段与中文表头；新增 jsonl / sqlite / md；JSON 额外记录 market/keyword/page/position/captured_at |
+| `Core.Logger` | `scripts/msagent/logutil.py` → `RunLog` | 纯文件日志 + 结构化 warnings，不弹窗 |
+| `Core.check_configFile_exist/pre_check_cookie` | `scripts/msagent/config.py` + CLI | 缺失不再阻断，降级为 warning 与 `next_actions` |
+| `Spider_jd.py` 的选择器 | `config/selectors.json` → `jd` | 选择器外置，probe 可诊断 |
 | `Spider_taobao.py` | `selectors.json` → `taobao` | 用 `[class*=]` 前缀 + 商品链接正则兜底 |
 | `1688Spider.py` | `selectors.json` → `1688` | 独立重写，去掉缺失模块依赖 |
 | `GetCookie.py` 的 60 秒倒计时 | `ms cookie --wait N` | 轮询登录 cookie 标记（`pin`/`_tb_token_` 等），命中即存 |

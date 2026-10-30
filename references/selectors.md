@@ -1,6 +1,6 @@
 # 选择器包说明（selectors.json）
 
-文件位置：`skill/config/selectors.json`。三个平台共用一套 schema，改这个文件不需要动 Python 代码。
+文件位置：`config/selectors.json`（相对技能内容根目录；解压包里是 `<安装包根>/skill/config/selectors.json`，GitHub/DSH 安装后是仓库根的 `config/selectors.json`）。三个平台共用一套 schema，改这个文件不需要动 Python 代码。
 
 ## 结构
 

@@ -14,11 +14,31 @@ import time
 from pathlib import Path
 from typing import Any, Iterable
 
-from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
-from selenium.webdriver.common.by import By
-
 from .logutil import RunLog
+
+# selenium is imported on demand. A module-level `from selenium import webdriver`
+# made `ms --help`, `ms doctor` and `ms env install` die with ImportError when
+# selenium was missing - i.e. the documented recovery command ("run ms env
+# install") was blocked by the very package it is supposed to install.
+SELENIUM_HINT = "安装 selenium：运行 ms env install，或 pip install selenium"
+
+try:  # tiny module, needed by the except-clauses below; no driver required
+    from selenium.common.exceptions import WebDriverException
+except ImportError:  # pragma: no cover - environment dependent
+    class WebDriverException(Exception):  # type: ignore[no-redef]
+        """Stand-in so importing this module never fails without selenium.
+
+        Nothing can raise it when selenium is absent (no browser can exist).
+        """
+
+
+def _selenium_webdriver():
+    """Import the selenium webdriver API lazily, with an actionable error."""
+    try:
+        from selenium import webdriver
+    except ImportError as exc:  # pragma: no cover - environment dependent
+        raise SeleniumMissing("未安装 selenium，无法启动浏览器", SELENIUM_HINT) from exc
+    return webdriver
 
 
 class SessionError(RuntimeError):
@@ -27,6 +47,12 @@ class SessionError(RuntimeError):
     def __init__(self, message: str, hint: str = ""):
         super().__init__(message)
         self.hint = hint
+
+
+class SeleniumMissing(SessionError):
+    """selenium itself is not installed -> environment exit code (3)."""
+
+    code = "environment"
 
 
 class DriverUnavailable(SessionError):
@@ -57,6 +83,7 @@ LOGIN_SELECTORS = ["#login-box", "#J_LoginBox", "#login-form", ".login-box", "fo
 
 def _options(browser: str, headless: bool, user_agent: str | None, proxy: str | None,
              profile_dir: str | None):
+    webdriver = _selenium_webdriver()
     if browser == "chrome":
         opts = webdriver.ChromeOptions()
     elif browser == "edge":
@@ -123,6 +150,7 @@ def bundled_driver(browser: str) -> str | None:
 def build_driver(browser: str = "chrome", headless: bool = False, driver_path: str | None = None,
                  user_agent: str | None = None, proxy: str | None = None,
                  profile_dir: str | None = None, page_load_timeout: int = 45):
+    webdriver = _selenium_webdriver()
     opts = _options(browser, headless, user_agent, proxy, profile_dir)
     if not driver_path:
         driver_path = bundled_driver(browser)
@@ -179,10 +207,14 @@ class BrowserSession:
         if not profile_dir and browser != "firefox":
             # A throwaway profile avoids "profile in use" locks on repeated runs.
             # It lives under <data>/state/profiles so it never leaks into cwd.
-            base = Path(log.dir).parent / "state" / "profiles"
+            # Only create <data>/state here. chromedriver creates the profile
+            # tree itself; pre-creating its parent "profiles" directory made
+            # session creation fail with "failed to write prefs file" when the
+            # data dir lived on some volumes (seen with a %TEMP% data dir).
+            base = Path(log.dir).parent / "state"
             try:
                 base.mkdir(parents=True, exist_ok=True)
-                profile_dir = str(base / f"p{os.getpid()}-{int(time.time() * 1000)}")
+                profile_dir = str(base / "profiles" / f"p{os.getpid()}-{int(time.time() * 1000)}")
                 cleanup_profile = True
             except OSError:
                 profile_dir = None
@@ -269,6 +301,8 @@ class BrowserSession:
 
     # ---------------- elements ----------------
     def find(self, selector: str, parent: Any = None):
+        from selenium.webdriver.common.by import By
+
         try:
             root = parent if parent is not None else self.driver
             found = root.find_elements(By.CSS_SELECTOR, selector)
@@ -277,6 +311,8 @@ class BrowserSession:
             return None
 
     def find_all(self, selector: str, parent: Any = None) -> list:
+        from selenium.webdriver.common.by import By
+
         try:
             root = parent if parent is not None else self.driver
             return root.find_elements(By.CSS_SELECTOR, selector)

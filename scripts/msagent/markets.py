@@ -1,9 +1,9 @@
 """Market adapters (JD / Taobao / 1688) with selector packs.
 
 Upstream kept selectors inline in each spider script, hard-coded to one DOM
-snapshot. Here selectors live in ``skill/config/selectors.json`` so a break
-in the site can be repaired without touching code, and every adapter has a
-degraded link-scan mode plus a probe report.
+snapshot. Here selectors live in ``config/selectors.json`` (skill root) so a
+break in the site can be repaired without touching code, and every adapter has
+a degraded link-scan mode plus a probe report.
 """
 
 from __future__ import annotations
@@ -26,7 +26,12 @@ SPACE_RE = re.compile(r"\s+")
 def _load_pack() -> dict:
     path = skill_root() / "config" / "selectors.json"
     if not path.exists():
-        raise SessionError(f"缺少选择器配置: {path}", "重新解压 skill 包或检查 MARKETSPIDER_HOME")
+        # skill_root() already probes both layouts, so a miss means the file is
+        # genuinely absent: never tell the user to set MARKETSPIDER_HOME, it
+        # only moves project_root() and would still look for the same file.
+        raise SessionError(
+            f"缺少选择器配置: {path}",
+            "技能包不完整：config/selectors.json 未随包发布，请重新获取完整技能目录")
     return json.loads(path.read_text(encoding="utf-8"))
 
 

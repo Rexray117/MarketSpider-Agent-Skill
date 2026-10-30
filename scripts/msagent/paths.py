@@ -19,7 +19,23 @@ def project_root() -> Path:
 
 
 def skill_root() -> Path:
-    return project_root() / "skill"
+    """Root of the skill *content* (``config/``, ``scripts/``, ``tests/``).
+
+    Two layouts have to work, because publishing flattens ``skill/*`` onto the
+    repository root while the unpacked kit keeps the ``skill/`` level:
+
+      * unpacked kit:      <kit>/skill/config/selectors.json
+      * published / DSH:   <repo>/config/selectors.json
+
+    Without this the whole main chain (markets / selftest / search / probe)
+    dies with FileNotFoundError on the published layout, while ``doctor``
+    still reports ok because it wraps the same lookup in a warning.
+    """
+    root = project_root()
+    nested = root / "skill"
+    if (nested / "config" / "selectors.json").is_file() or nested.is_dir():
+        return nested
+    return root
 
 
 def default_data_dir() -> Path:

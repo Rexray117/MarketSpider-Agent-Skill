@@ -1,26 +1,37 @@
 """CLI integration tests: no network, no login required.
 
-Run with:  .venv/Scripts/python.exe skill/tests/test_cli.py
+Run with:  python -m unittest discover -s tests -v      (from the skill root)
 Every case asserts the JSON envelope contract plus exit code.
+
+Works in both layouts: the unpacked kit (<kit>/skill/tests) and the published
+repo where ``skill/*`` is flattened to the repository root.
 """
 
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]          # marketspider-agent/
-SKILL = ROOT / "skill"
+# Walk up until we find the directory that actually holds scripts/ms.py, so the
+# suite works whether the skill content sits at <kit>/skill or at the repo root.
+ROOT = next(p for p in Path(__file__).resolve().parents if (p / "scripts" / "ms.py").is_file())
+SKILL = ROOT
 MS = SKILL / "scripts" / "ms.py"
 PY = sys.executable
 FIXTURES = SKILL / "tests" / "fixtures"
-_TMP_BASE = ROOT / "data" / "state"
-_TMP_BASE.mkdir(parents=True, exist_ok=True)
-DATA = Path(tempfile.mkdtemp(prefix="test-tmp-", dir=_TMP_BASE))
+# Scratch data goes to the system temp dir, not <skill>/data/state: the run log
+# records absolute host paths, and anything under the skill root would be
+# published when skill/* is flattened onto the repository root.
+DATA = Path(tempfile.mkdtemp(prefix="marketspider-test-"))
+
+
+def tearDownModule():
+    shutil.rmtree(DATA, ignore_errors=True)
 
 
 def run(*args: str, expect: int = 0) -> dict:

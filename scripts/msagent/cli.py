@@ -25,7 +25,7 @@ from .config import DEFAULTS, FORMATS, load_config, save_config, validate
 from .logutil import RunLog
 from .markets import MARKETS, get_market, normalize_price
 from .paths import Layout, default_data_dir, project_root, skill_root
-from .writers import WRITERS, WriterSet
+from .writers import CN_NAMES, FIELDS, META_FIELDS, WRITERS, WriterSet
 
 
 class MsError(RuntimeError):
@@ -319,7 +319,7 @@ def cmd_cookie(args) -> dict:
         log.info(f"imported {len(data)} cookies -> {dest}")
         log.close()
         return envelope("cookie import", {"market": market.slug, "path": str(dest), "cookies": len(data)},
-                        next_actions=["ms cookie check --market " + market.slug,
+                        next_actions=["ms cookie --market " + market.slug + " --action check",
                                       f"ms search --market {market.slug} --keyword 关键词"])
 
     if args.action == "check":
@@ -381,7 +381,7 @@ def cmd_cookie(args) -> dict:
     warnings = [] if data["login_marker_seen"] else [
         "未检测到登录态 Cookie；请确认已在弹出的浏览器中完成登录，然后重试或直接运行 search（可能结果缺失）"]
     return envelope("cookie acquire", data, warnings=warnings,
-                    next_actions=["ms cookie check --market " + market.slug,
+                    next_actions=["ms cookie --market " + market.slug + " --action check",
                                   "ms search --market " + market.slug + " --keyword 关键词 --pages 1"])
 
 
@@ -586,7 +586,7 @@ def cmd_probe(args) -> dict:
     if report["blocked"]:
         hints.append("出现验证码/风控，用有头模式人工验证")
     if not any(report["cards"].values()):
-        hints.append("所有卡片选择器命中 0，检查 html_dump 并更新 skill/config/selectors.json")
+        hints.append("所有卡片选择器命中 0，检查 html_dump 并更新 config/selectors.json")
     return envelope("probe", report, warnings=log.warnings, next_actions=hints, log_path=str(log.path))
 
 
@@ -614,6 +614,34 @@ def _read_rows(path: Path) -> list[dict]:
     return payload
 
 
+EXPORT_FIELD_EXAMPLES = ["item_name", "item_price", "item_link", "item_shop", "item_image"]
+
+
+def _schema_warnings(rows: list[dict]) -> tuple[list[str], list[str]]:
+    """Report off-schema keys instead of silently writing all-empty columns.
+
+    Writers only emit the fixed FIELDS schema, so ``export`` of a JSON whose
+    keys are e.g. ``title/price/shop_name`` used to answer ``ok:true`` with
+    10 empty columns. That looks like data loss, so say it out loud.
+    """
+    keys: set[str] = set()
+    for row in rows:
+        if isinstance(row, dict):
+            keys.update(str(k) for k in row)
+    # META_FIELDS ride along in the JSON writer's rows, so they are expected.
+    known = set(FIELDS) | set(CN_NAMES.values()) | set(META_FIELDS)
+    matched, unknown = keys & known, keys - known
+    if not rows or not unknown:
+        return [], []
+    if not matched:
+        return (
+            ["输入行没有任何 schema 字段（" + ", ".join(sorted(unknown)[:6]) + "），"
+             "导出各列将为空。schema 字段示例: " + ", ".join(EXPORT_FIELD_EXAMPLES)],
+            ["把结果行改成 schema 字段名（item_name/item_price/item_link/item_shop/item_image）后重新 export"],
+        )
+    return ([f"忽略不在 schema 内的字段: {', '.join(sorted(unknown)[:8])}"], [])
+
+
 def cmd_export(args) -> dict:
     src = Path(args.input).expanduser().resolve()
     if not src.exists():
@@ -627,8 +655,10 @@ def cmd_export(args) -> dict:
     for row in rows:
         writers.add(row)
     artifacts = writers.close()
+    warnings, next_actions = _schema_warnings(rows)
+    warnings.extend(writers.errors)
     return envelope("export", {"input": str(src), "rows_in": len(rows), "formats": formats},
-                    artifacts=artifacts)
+                    warnings=warnings, artifacts=artifacts, next_actions=next_actions)
 
 
 def _to_float(value) -> float | None:
@@ -658,6 +688,15 @@ def cmd_stats(args) -> dict:
             if not value:
                 missing[key] += 1
     total = len(rows) or 1
+    # Standard median: mean of the two middle samples for even counts.
+    # The old `prices[len(prices)//2]` returned the upper middle (99.5/129 -> 129).
+    count = len(prices)
+    if count % 2:
+        median = prices[count // 2]
+    elif count:
+        median = round((prices[count // 2 - 1] + prices[count // 2]) / 2, 2)
+    else:
+        median = None
     data = {
         "input": str(src),
         "rows": len(rows),
@@ -666,7 +705,7 @@ def cmd_stats(args) -> dict:
             "min": prices[0] if prices else None,
             "max": prices[-1] if prices else None,
             "avg": round(sum(prices) / len(prices), 2) if prices else None,
-            "median": prices[len(prices) // 2] if prices else None,
+            "median": median,
         },
         "top_shops": sorted(shops.items(), key=lambda kv: kv[1], reverse=True)[: args.top],
         "unique_shops": len(shops),
@@ -755,11 +794,46 @@ def cmd_selftest(args) -> dict:
 # argument parsing
 # --------------------------------------------------------------------------- #
 
+def _subcommand_name(parser: argparse.ArgumentParser, argv: list[str]) -> str:
+    """Recover the real subcommand for a usage error.
+
+    argparse aborts in the middle of parsing, so ``args.cmd`` does not exist
+    yet; the old code hardcoded "cli" and callers could not tell which
+    invocation was malformed. ``--data-dir`` takes a value, so skip its token.
+    """
+    choices: set[str] = set()
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            choices.update(action.choices)
+    # A subparser also raises usage errors (missing required option), and it
+    # has no child subparsers of its own: its prog is "ms <subcommand>".
+    choices.update(token for token in parser.prog.split()[1:] if token)
+    skip_value = False
+    for token in argv:
+        if skip_value:
+            skip_value = False
+            continue
+        if token == "--data-dir":
+            skip_value = True
+            continue
+        if token.startswith("-"):
+            continue
+        if token in choices:
+            return token
+    return "cli"
+
+
 class JsonArgumentParser(argparse.ArgumentParser):
     """Emit a JSON error envelope instead of plain argparse text."""
 
+    # Class attribute, not instance state: argparse builds subparsers with the
+    # class of their parent, and a missing required option (e.g. --market) is
+    # reported by the *subparser*, which must still see the raw argv.
+    raw_argv: list[str] = []
+
     def error(self, message: str) -> None:  # type: ignore[override]
-        emit(fail("cli", "usage", message, self.format_usage().strip()))
+        emit(fail(_subcommand_name(self, type(self).raw_argv), "usage", message,
+                  self.format_usage().strip()))
         raise SystemExit(EXIT_FOR["usage"])
 
 
@@ -854,6 +928,7 @@ def main(argv: list[str] | None = None) -> int:
             stream.reconfigure(encoding="utf-8")
         except (AttributeError, ValueError):
             pass
+    JsonArgumentParser.raw_argv = list(sys.argv[1:] if argv is None else argv)
     parser = build_parser()
     args = parser.parse_args(argv)
     command = args.cmd

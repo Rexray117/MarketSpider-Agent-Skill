@@ -1,10 +1,10 @@
 # MarketSpider Agent · 电商商品数据采集
 
 [![DSH Skill](https://img.shields.io/badge/DeepSeek%20Harness-skill-4a7dff)](https://github.com/Rexray117/MarketSpider-Agent-Skill)
-[![version](https://img.shields.io/badge/version-1.0.0-brightgreen)](https://github.com/Rexray117/MarketSpider-Agent-Skill/releases)
+[![version](https://img.shields.io/badge/version-1.1.0-brightgreen)](https://github.com/Rexray117/MarketSpider-Agent-Skill/releases)
 [![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
-> 一个 **DeepSeek Harness（DSH）/ Agent Skill**：`marketspider` v1.0.0。
+> 一个 **DeepSeek Harness（DSH）/ Agent Skill**：`marketspider` v1.1.0。
 
 > 上游说明：基于 zhangjiancong/MarketSpider 源码改造为无 GUI、可脚本调用的工具链。
 
@@ -55,7 +55,7 @@ plugin_manager action=install_bundle target=<本仓库绝对路径>
 
 ## 版本
 
-- 当前版本：**v1.0.0**（与 `SKILL.md` 的 `version` 字段一致）
+- 当前版本：**v1.1.0**（与 `SKILL.md` 的 `version` 字段一致）
 - 变更记录见仓库提交历史
 
 ## License
